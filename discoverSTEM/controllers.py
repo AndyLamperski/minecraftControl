@@ -5,7 +5,19 @@ import scipy.linalg as la
 
 
 class moveSphereTo:
+    """
+    controller = moveSphereTo(target_x,target_y,Kp,Kd,tolerance)
+
+    target_x - desired x value
+    target_y - desired y value
+    Kp - optional proportional gain
+    Kd - optional derivative gain
+    tolerance - optional error tolerance to declare when goal is reached.
+    """
     def __init__(self,target_x,target_y,Kp=3,Kd=7,tolerance=0.1):
+        """
+        This sets up the parameters
+        """
         self.target = np.array([target_x,target_y])
         self.Kp = Kp
         self.Kd = Kd
@@ -15,6 +27,10 @@ class moveSphereTo:
         self.tolerance = tolerance
         
     def update(self,measurement):
+        """
+        This updates the the position and velocity errors
+        and checks if the system is sufficiently close to the target
+        """
         pos,vel = measurement
         self.posErr = pos - self.target
         self.velErr = vel
@@ -22,6 +38,9 @@ class moveSphereTo:
             self.Done = True
         
     def value(self):
+        """
+        This computes the actions
+        """
         return -self.Kp * self.posErr - self.Kd * self.velErr
 
 class controllerSequence:

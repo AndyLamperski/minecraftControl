@@ -10,8 +10,8 @@ To get started do the following thing.
 * Paste in the following commands (either right click or `Ctrl-Shift-v`)
 
 ```
-git clone https://github.com/AndyLamperski/DiscoverSTEM.git
-cd DiscoverSTEM
+git clone https://github.com/AndyLamperski/minecraftControl.git
+cd minecraftControl
 ./buildEnvironment
 ```
 

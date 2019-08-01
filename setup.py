@@ -13,8 +13,6 @@ setup(name='discoverSTEM',
           'scipy',
           'pyglet',
           'matplotlib',
-          'sympy'
       ]
       )
-      
 

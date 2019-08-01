@@ -119,7 +119,6 @@ def normalize(position):
 
 def sectorize(position):
     """ Returns a tuple representing the sector for the given `position`.
-    
     Parameters
     ----------
     position : tuple of len 3
@@ -155,14 +154,12 @@ class layout:
                 elif x == self.start[0] and z == self.start[1]:
                     plt.plot(x,z,'b+',markersize=40)
                 elif (-x,-1,z) not in self.MazeVertices:
-                    
                     plt.text(x,z,'(%d,%d)' % (x,z),fontsize=14,
                              verticalalignment='center',
                              horizontalalignment='center')
                 else:
                     plt.plot(x,z,'s',markersize=30,color='k')
 
-                    
         ax.set_aspect('equal')
         ax.set_xticks([])
         ax.set_yticks([])
@@ -236,7 +233,6 @@ MazeVertices = [(5,-1,6),
                 (3,-1,2),
                 (3,-1,1),
                 (3,-1,0)]
-       
 
 MazeVertices = [(7,-1,-5),
                 (6,-1,-5),
@@ -349,11 +345,10 @@ class Model(object):
                 # create a layer stone an grass everywhere.
 
                 if x == 0 and z == 0:
-                    self.add_block((x, y - 2, z), SAND, immediate=False)   
+                    self.add_block((x, y - 2, z), SAND, immediate=False)
                 else:
                     self.add_block((x, y - 2, z), GRASS, immediate=False)
                 self.add_block((x, y - 3, z), STONE, immediate=False)
-                
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-2, 3):
@@ -474,7 +469,6 @@ class Model(object):
                 if key in self.shown:
                     self.hide_block(key)
 
-                    
     def show_block(self, position, immediate=True):
         """ Show the block at the given `position`. This method assumes the
         block has already been added with add_block()
@@ -494,7 +488,6 @@ class Model(object):
         else:
             self._enqueue(self._show_block, position, texture)
 
-            
     def _show_block(self, position, texture):
         """ Private implementation of the `show_block()` method.
 
@@ -1140,7 +1133,7 @@ def ballSmall(controller=None):
 
 def carSmall(controller=None):
     vehicle = vh.car((0,-1,0),np.pi,1.,VEHICLE_SPEED,controller=controller)
-    window = Window(position=(0,3,0),flying=True, 
+    window = Window(position=(0,3,0),flying=True,
                     layout=smallLayout,
                     vehicle = vehicle,
                     height=800,width=800, caption='Pyglet',

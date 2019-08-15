@@ -133,11 +133,12 @@ def sectorize(position):
     return (x, 0, z)
 
 class layout:
-    def __init__(self,n,MazeVertices,start):
+    def __init__(self,n,MazeVertices,start,cameraPosition):
         self.n = n
         self.MazeVertices = MazeVertices
         self.start = start
-
+        self.cameraPosition = cameraPosition
+        
     def plot(self):
         gridVerts = []
         n = self.n
@@ -294,8 +295,10 @@ MazeVertices = [(7,-1,-5),
 
 smallStart = (0,0)
 mazeStart = (-7,-7)
-smallLayout = layout(3,[],smallStart)
-mazeLayout = layout(8,MazeVertices,mazeStart)
+smallCamera = (0,3,0)
+mazeCamera = (0,14,0)
+smallLayout = layout(3,[],smallStart,smallCamera)
+mazeLayout = layout(8,MazeVertices,mazeStart,mazeCamera)
 
 class Model(object):
 
@@ -1152,6 +1155,21 @@ def carSmall(controller=None):
     ax[2].plot(vehicle.Time,vehicle.ThetaTraj)
     ax[2].set_ylabel(r'$\theta$',fontsize=16)
     ax[2].set_xlabel('Time',fontsize=16)
+
+def generalSystem(layout,vehicle):
+    window = Window(position=layout.cameraPosition,flying=True,
+                    layout=layout,
+                    vehicle = vehicle,
+                    height=800,width=800, caption='Pyglet',
+                    resizable=True)
+
+    # Hide the mouse cursor and prevent the mouse from leaving the window.
+    window.set_exclusive_mouse(False)
+    setup()
+    pyglet.app.run()
+
+    
+    
 def main():
     window = Window(position=(0,14,0),flying=True,
                     height=800,width=800, caption='Pyglet', resizable=True)

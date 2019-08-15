@@ -4,9 +4,29 @@ import scipy.linalg as la
 import pyglet as pg
 from pyglet.gl import *
 from pyglet.window import key, mouse
+
+class vehicle:
+    def __init__(self):
+        pass
+
+    def on_key_press(self,symbol,modifiers):
+        pass
+
+    def update(self,dt):
+        pass
+    
+    def draw(self):
+        pass
+
+    def on_key_release(self,symbol,modifiers):
+        pass
+
 ## Rolling Sphere ## 
 numPrimes = 20
 numMeridians = 20
+
+
+VEHICLE_SPEED = 3
 
 
 def sphere_vertices(x,y,z,n):
@@ -299,7 +319,8 @@ carColors = np.array([[0,0,255],#0
                       [0,0,0],#30
                       [0,0,0]]).flatten()                      
 class car:
-    def __init__(self,position,orientation,scale,SPEED,controller=None):
+    def __init__(self,position,orientation = np.pi,scale = 1.,
+                 SPEED = VEHICLE_SPEED,controller=None):
         self.SPEED = SPEED
         self.position = np.array(position).squeeze()
         self.theta = orientation
@@ -402,5 +423,119 @@ class car:
 
 
 
+def cubeVertices(w,h,d):
+    cubeVertices = np.array([[-w,-h,-d],
+                             [-w,-h,d],
+                             [-w,h,-d],
+                             [-w,h,d],
+                             [w,-h,-d],
+                             [w,-h,d],
+                             [w,h,-d],
+                             [w,h,d]])
+    return cubeVertices / 2.
+
+cubeSequence = [0,1,2,
+                1,2,3,
+                0,1,4,
+                1,4,5,
+                0,2,4,
+                2,4,6,
+                1,3,5,
+                3,5,7,
+                2,3,6,
+                3,6,7,
+                4,5,6,
+                5,6,7]
+
+
+
+class quadcopter(vehicle):
+    def __init__(self,position,SPEED = VEHICLE_SPEED,controller=None):
+        super().__init__()
+        self.SPEED = SPEED
+        self.position = np.array(position).squeeze()
         
+        self.bodyDimensions = [.12,.07,.12]
+        self.bodyColors = rnd.randint(0,256,size=3*8)
+
+        self.armDimensions = [.47,.02,.02]
+        self.armColors = rnd.randint(0,50,size=3*8)
+
+        self.bladeDimensions = [.13,.005,.01]
+        self.bladeColors = rnd.randint(100,150,size=3*8)
         
+        self.bladeAngles = 2 * np.pi * rnd.rand(4)
+
+        self.blade_speed = 10 * np.ones(4)
+        
+    def draw_indexed(self,Verts,Seq,colors):
+        pg.graphics.draw_indexed(len(Verts),GL_TRIANGLES,
+                                 Seq,
+                                 ('v3f',Verts.flatten()),
+                                 ('c3B',colors))
+
+
+    
+    def update(self,dt):
+        self.bladeAngles += dt * self.blade_speed
+
+    def draw_body(self):
+        V = cubeVertices(*self.bodyDimensions)
+        Verts = V + np.tile(self.position,(len(V),1))
+        Seq = cubeSequence
+        self.draw_indexed(Verts,Seq,self.bodyColors)
+
+                
+    def draw_arms(self):
+        V = cubeVertices(*self.armDimensions)
+        Verts = V + np.tile(self.position,(len(V),1))
+        Seq = cubeSequence
+        Cols = self.armColors
+
+        self.draw_indexed(Verts,Seq,Cols)
+
+        R = np.array([[0,0,1],
+                      [0,1,0],
+                      [-1,0,0]])
+        
+        V = V @ R
+        Verts = V + np.tile(self.position,(len(V),1))
+        self.draw_indexed(Verts,Seq,self.armColors)
+
+    def draw_blades(self):
+        V = cubeVertices(*self.bladeDimensions)
+        nv = len(V)
+        w,h,d = self.armDimensions
+
+        R = np.array([[0,0,1],
+                      [0,1,0],
+                      [-1,0,0]])
+        
+
+        armPosition = np.array([.9 * w/2,
+                                1.2 * d/2,
+                                0])
+
+
+        
+        Seq = cubeSequence
+        Cols = self.bladeColors
+
+        for i in range(4):
+            if i > 0:
+                armPosition = R @ armPosition 
+
+            
+            theta = self.bladeAngles[i]
+            R_blade = np.array([[np.cos(theta),0,-np.sin(theta)],
+                                [0,1,0],
+                                [np.sin(theta),0,np.cos(theta)]])
+            V_shift = V@R_blade + np.tile(armPosition,(nv,1))
+            Verts = V_shift + np.tile(self.position,(nv,1))
+            self.draw_indexed(Verts,Seq,Cols)
+         
+        
+    def draw(self):
+        self.draw_body()
+        self.draw_arms()
+        self.draw_blades()                  

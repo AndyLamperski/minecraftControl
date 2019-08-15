@@ -28,18 +28,20 @@ class moveSphereTo:
         
     def update(self,measurement):
         """
-        This updates the the position and velocity errors
-        and checks if the system is sufficiently close to the target
+
         """
         pos,vel = measurement
         self.posErr = pos - self.target
         self.velErr = vel
         if la.norm(self.posErr) < self.tolerance:
             self.Done = True
-        
+
+            
     def value(self):
         """
         This computes the actions
+
+        This actually returns the input
         """
         return -self.Kp * self.posErr - self.Kd * self.velErr
 

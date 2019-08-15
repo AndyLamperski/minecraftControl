@@ -620,9 +620,9 @@ class Window(pyglet.window.Window):
                  *args, **kwargs):
 
         # The label that is displayed in the top left of the canvas.
-        self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
-            x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
-            color=(0, 0, 0, 255))
+        # self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
+        #     x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
+        #     color=(0, 0, 0, 255))
 
         # The crosshairs at the center of the screen.
         self.reticle = None
@@ -957,7 +957,7 @@ class Window(pyglet.window.Window):
 
         """
         # label
-        self.label.y = height - 10
+        #self.label.y = height - 10
         # reticle
         if self.reticle:
             self.reticle.delete()

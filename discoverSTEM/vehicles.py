@@ -135,7 +135,9 @@ class rollingSphere:
         vx,vy,vz = self.velocity
         # Just controlling 2d, in more normal coordinates
         measurement = (np.array([-x,z]),np.array([-vx,vz]))
+        # The archicture assumes we first update the internal variables
         self.controller.update(measurement)
+        # And then get the value
         dx,dz = self.controller.value()
         #print(dx,dy,dz)
         dy = 0.
@@ -423,15 +425,18 @@ class car:
 
 
 
-def cubeVertices(w,h,d):
-    cubeVertices = np.array([[-w,-h,-d],
-                             [-w,-h,d],
-                             [-w,h,-d],
-                             [-w,h,d],
-                             [w,-h,-d],
-                             [w,-h,d],
-                             [w,h,-d],
-                             [w,h,d]])
+def cubeVertices(w,d,h):
+    """
+    These are cube vertices in the natural world frame
+    """
+    cubeVertices = np.array([[-w,-d,-h],
+                             [-w,-d,h],
+                             [-w,d,-h],
+                             [-w,d,h],
+                             [w,-d,-h],
+                             [w,-d,h],
+                             [w,d,-h],
+                             [w,d,h]])
     return cubeVertices / 2.
 
 cubeSequence = [0,1,2,
@@ -447,29 +452,73 @@ cubeSequence = [0,1,2,
                 4,5,6,
                 5,6,7]
 
+# coordinate transfromation from world frame to drawing frame
+R_dw = np.array([[-1.,0,0],
+                 [0,0,1],
+                 [0,1,0]])
+p_dw = np.array([0.,-1,0])
 
+import discoverSTEM.uquat as uq
 
 class quadcopter(vehicle):
     def __init__(self,position,SPEED = VEHICLE_SPEED,controller=None):
+        """
+        In contrast to the earlier vehicles, which were coded in the drawing frame
+        the position is in the more intuitive XYZ frame with:
+        - X points east
+        - Y points north
+        - Z points up
+
+        The transformation to the drawing frame is handled internally
+        """
         super().__init__()
         self.SPEED = SPEED
         self.position = np.array(position).squeeze()
         
-        self.bodyDimensions = [.12,.07,.12]
+        self.bodyDimensions = [.12,.12,.07]
         self.bodyColors = rnd.randint(0,256,size=3*8)
 
         self.armDimensions = [.47,.02,.02]
         self.armColors = rnd.randint(0,50,size=3*8)
 
-        self.bladeDimensions = [.13,.005,.01]
+        self.bladeDimensions = [.13,0.01,.005]
         self.bladeColors = rnd.randint(100,150,size=3*8)
         
         self.bladeAngles = 2 * np.pi * rnd.rand(4)
 
         self.blade_speed = 10 * np.ones(4)
+
+        self.dynamicsParameters()
+
+        # Body Velocity
+        self.v = np.array([.1,0,0])
+        self.omega = np.array([0.,0.1,0])
+        
+        # Body frame  to world frame rotation
+        self.R = np.eye(3)
+        
+    def dynamicsParameters(self):
+        """
+        Parameters from robotics toolbox
+
+        https://github.com/petercorke/robotics-toolbox-matlab
+        """
+
+        self.M = 4.
+        self.J = np.diag([0.082, 0.082, 0.149])
         
     def draw_indexed(self,Verts,Seq,colors):
-        pg.graphics.draw_indexed(len(Verts),GL_TRIANGLES,
+        """
+        Draws a sequence of vertices specified in the body frame.
+
+        - Using self.R and self.position it first transforms to the world frame
+        - Then, it uses R_dw and p_dw to transform to the drawing frame 
+        """
+        nv = len(Verts)
+        # First transform to the world frame
+        Verts = Verts @ self.R.T + np.tile(self.position,(nv,1))
+        Verts = Verts @ R_dw.T + np.tile(p_dw,(nv,1))
+        pg.graphics.draw_indexed(nv,GL_TRIANGLES,
                                  Seq,
                                  ('v3f',Verts.flatten()),
                                  ('c3B',colors))
@@ -477,44 +526,68 @@ class quadcopter(vehicle):
 
     
     def update(self,dt):
+        # Update the rotation matrix 
+
+        # Calculate the rotational change
+        # by Rodrigues formula
+        
+        theta = dt * la.norm(self.omega)
+        if np.abs(theta) > 1e-12:
+            w = self.omega / la.norm(self.omega)
+
+            W = uq.cross_mat(w)
+            W_sq = W @ W
+        
+            dR = np.eye(3) + np.sin(theta) * W + (1-np.cos(theta)) * W_sq
+
+            # Then update the rotation
+            self.R = self.R @ dR
+
+
+        # Update the position
+        # The somewhat more complex formula is because we are using the
+        # body velocity, rather than the world-frame velocity
+        self.position += dt * self.R @ self.v
+        
+        # Update the blades
         self.bladeAngles += dt * self.blade_speed
 
     def draw_body(self):
         V = cubeVertices(*self.bodyDimensions)
-        Verts = V + np.tile(self.position,(len(V),1))
+        Verts = V 
         Seq = cubeSequence
         self.draw_indexed(Verts,Seq,self.bodyColors)
 
                 
     def draw_arms(self):
         V = cubeVertices(*self.armDimensions)
-        Verts = V + np.tile(self.position,(len(V),1))
+        Verts = V 
         Seq = cubeSequence
         Cols = self.armColors
 
         self.draw_indexed(Verts,Seq,Cols)
 
-        R = np.array([[0,0,1],
-                      [0,1,0],
-                      [-1,0,0]])
+        R = np.array([[0,-1,0],
+                      [1,0,0],
+                      [0,0,1]])
         
         V = V @ R
-        Verts = V + np.tile(self.position,(len(V),1))
+        Verts = V 
         self.draw_indexed(Verts,Seq,self.armColors)
 
     def draw_blades(self):
         V = cubeVertices(*self.bladeDimensions)
         nv = len(V)
-        w,h,d = self.armDimensions
+        w,d,h = self.armDimensions
 
-        R = np.array([[0,0,1],
-                      [0,1,0],
-                      [-1,0,0]])
+        R = np.array([[0,-1,0],
+                      [1,0,0],
+                      [0,0,1]])
         
 
         armPosition = np.array([.9 * w/2,
-                                1.2 * d/2,
-                                0])
+                                0,
+                                1.2 * d/2])
 
 
         
@@ -527,11 +600,11 @@ class quadcopter(vehicle):
 
             
             theta = self.bladeAngles[i]
-            R_blade = np.array([[np.cos(theta),0,-np.sin(theta)],
-                                [0,1,0],
-                                [np.sin(theta),0,np.cos(theta)]])
+            R_blade = np.array([[np.cos(theta),-np.sin(theta),0],
+                                [np.sin(theta),np.cos(theta),0],
+                                [0,0,1]])
             V_shift = V@R_blade + np.tile(armPosition,(nv,1))
-            Verts = V_shift + np.tile(self.position,(nv,1))
+            Verts = V_shift 
             self.draw_indexed(Verts,Seq,Cols)
          
         

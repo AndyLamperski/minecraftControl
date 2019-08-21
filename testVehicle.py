@@ -6,6 +6,6 @@ x,y=  layout.start
 vehicle = vh.car((-x,-1,y),controller=None)
 
 
-vehicle = vh.quadcopter((0.,0,2),controller=None)
+vehicle = vh.quadcopter((0.,0,0),controller=None)
 
 mc.generalSystem(layout,vehicle)

@@ -486,13 +486,13 @@ class quadcopter(vehicle):
         
         self.bladeAngles = 2 * np.pi * rnd.rand(4)
 
-        self.blade_speed = 10 * np.ones(4)
+        self.blade_speed = np.array([20,0,20,0.])
 
         self.dynamicsParameters()
 
         # Body Velocity
-        self.v = np.array([.1,0,0])
-        self.omega = np.array([0.,0.1,0])
+        self.v = np.array([0.,0,0])
+        self.omega = np.array([0.,0.,0])
         
         # Body frame  to world frame rotation
         self.R = np.eye(3)
@@ -504,8 +504,48 @@ class quadcopter(vehicle):
         https://github.com/petercorke/robotics-toolbox-matlab
         """
 
+        # Air density
+        self.rho = 1.184
+
+        # Mass
         self.M = 4.
-        self.J = np.diag([0.082, 0.082, 0.149])
+        # Inertia
+        J_flat =  np.array([0.082, 0.082, 0.149])
+        self.J = np.diag(J_flat)
+        self.J_inv = np.diag(1/J_flat)
+        # Arm length
+        self.d = 0.315
+        # rotor height above CoG
+        self.h = -0.007
+        # Rotor Displacement Matrix
+        self.D = np.array([[self.d,0,self.h],
+                           [0,self.d,self.h],
+                           [-self.d,0,self.h],
+                           [0,-self.d,self.h]]).T
+
+        # Rotor radius
+        self.r = 0.165
+        # Rotor disc area
+        self.A = np.pi*self.r**2;
+
+        
+        # Thrust coefficient
+        self.Ct = 0.0048
+        # Torque coefficient
+        self.Cq = self.Ct*np.sqrt(self.Ct/2)
+
+    
+       
+        # Lumped thrust coefficient
+        self.ct = self.Ct * self.rho * self.A * self.r**2
+        # Lumped torque coefficient
+        self.cq = self.Cq * self.rho * self.A * self.r**3
+
+        # Torque-Thrust Transformation
+        self.Gamma = np.array([[self.ct,self.ct,self.ct,self.ct],
+                               [0,self.d*self.ct,0,-self.d*self.ct],
+                               [-self.d*self.ct,0,self.d*self.ct,0],
+                               [-self.cq,self.cq,-self.cq,self.cq]])
         
     def draw_indexed(self,Verts,Seq,colors):
         """
@@ -551,6 +591,18 @@ class quadcopter(vehicle):
         
         # Update the blades
         self.bladeAngles += dt * self.blade_speed
+
+        # Calculate the forces and torques
+        F_gen = self.Gamma @ self.blade_speed**2
+        T_tot = F_gen[0]
+        F = np.array([0,0,T_tot])
+        tau = F_gen[1:]
+        
+        # Update the velocities
+        domega = self.J_inv@(-np.cross(self.omega,self.J@self.omega)+tau)
+        self.omega += dt * domega
+        dv = (-np.cross(self.v,self.M * self.v) + F) / self.M
+        self.v += dt * dv
 
     def draw_body(self):
         V = cubeVertices(*self.bodyDimensions)

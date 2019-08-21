@@ -486,7 +486,7 @@ class quadcopter(vehicle):
         
         self.bladeAngles = 2 * np.pi * rnd.rand(4)
 
-        self.blade_speed = np.array([20,0,20,0.])
+        self.blade_speed = np.array([25,-20,20,-20])
 
         self.dynamicsParameters()
 
@@ -507,6 +507,7 @@ class quadcopter(vehicle):
         # Air density
         self.rho = 1.184
 
+        self.g = 9.81
         # Mass
         self.M = 4.
         # Inertia
@@ -527,7 +528,20 @@ class quadcopter(vehicle):
         self.r = 0.165
         # Rotor disc area
         self.A = np.pi*self.r**2;
+        # blade angles
+        self.thetat = 6.8*(np.pi/180) 
+        self.theta0 = 14.6*(np.pi/180)
+        self.theta1 = self.thetat - self.theta0
 
+        self.Mb = 0.005
+        self.Mc = 0.010
+        self.ec = 0.004
+        self.Ib = self.Mb*(self.r-self.ec)**2/4
+        self.Ic = self.Mc*(self.ec)**2/4; 
+        
+        self.a = 5.5
+        self.c = 0.018
+        self.gamma = self.rho*self.a*self.c*self.r**4/(self.Ib+self.Ic)
         
         # Thrust coefficient
         self.Ct = 0.0048
@@ -593,15 +607,40 @@ class quadcopter(vehicle):
         self.bladeAngles += dt * self.blade_speed
 
         # Calculate the forces and torques
-        F_gen = self.Gamma @ self.blade_speed**2
-        T_tot = F_gen[0]
-        F = np.array([0,0,T_tot])
-        tau = F_gen[1:]
-        
+        #F_gen = self.Gamma @ self.blade_speed**2
+        #T_tot = F_gen[0]
+        #F = np.array([0,0,T_tot])
+        #tau = F_gen[1:]
+
+        T = np.zeros((3,4))
+        tau = np.zeros_like(T)
+        Q = np.zeros_like(T)
+        # More general dynamics involving blade flapping
+        for i in range(4):
+            Vr = np.cross(self.omega,self.D[:,i]) + self.v
+            mu = la.norm(Vr) /(np.abs(self.blade_speed[i])*self.r)
+            lc = Vr[2] / (np.abs(self.blade_speed[i])*self.r)
+            psi = np.arctan2(Vr[1],Vr[0])
+            J = np.array([[np.cos(psi),-np.sin(psi)],
+                          [np.sin(psi),np.cos(psi)]])
+
+            beta = np.array([((8/3*self.theta0 + 2*self.theta1)*mu - 2*(lc)*mu)/(1-mu**2/2),
+                             0])
+            beta = J.T @ beta
+            a1s = beta[0] - 16 * self.omega[1] / (self.gamma * self.blade_speed[i])
+            b1s = beta[1] - 16 * self.omega[0] / (self.gamma * self.blade_speed[i])
+
+            # The ordering of this does not yet make sense to me.
+            T[:,i] = self.ct * self.blade_speed[i]**2 * np.array([-np.sin(b1s),
+                                                                  np.cos(b1s)*np.sin(a1s),
+                                                                  np.cos(a1s)*np.cos(b1s)])
+
+            tau[:,i] = np.cross(T[:,i],self.D[:,i])
+            Q[:,i] = -self.cq*self.blade_speed[i]*np.abs(self.blade_speed[i]) * np.array([0,0,1]);
         # Update the velocities
-        domega = self.J_inv@(-np.cross(self.omega,self.J@self.omega)+tau)
+        domega = self.J_inv@(-np.cross(self.omega,self.J@self.omega)+np.sum(tau+Q,axis=1))
         self.omega += dt * domega
-        dv = (-np.cross(self.v,self.M * self.v) + F) / self.M
+        dv = (-np.cross(self.v,self.M * self.v) + np.sum(T,axis=1)) / self.M
         self.v += dt * dv
 
     def draw_body(self):

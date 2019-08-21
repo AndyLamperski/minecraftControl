@@ -113,7 +113,7 @@ class rollingSphere:
         self.controller = controller
 
         self.Time = [0.]
-        self.Traj = [np.array([position[0],position[2]])]
+        self.v_traj = [np.array([position[0],position[2]])]
 
     def get_vertices(self):
         x,y,z = self.position
@@ -486,16 +486,22 @@ class quadcopter(vehicle):
         
         self.bladeAngles = 2 * np.pi * rnd.rand(4)
 
-        self.blade_speed = np.array([25,-20,20,-20])
-
+        
         self.dynamicsParameters()
+        
+        self.blade_speed = np.array([1,-1,1,-1]) * np.sqrt(self.M * self.g / (self.ct*4))
+
 
         # Body Velocity
-        self.v = np.array([0.,0,0])
+        theta = 2*np.pi*rnd.rand()
+        self.v = 0.05 * np.array([np.cos(theta),np.sin(theta),0])
         self.omega = np.array([0.,0.,0])
         
         # Body frame  to world frame rotation
         self.R = np.eye(3)
+
+        self.v_traj = [self.v]
+        self.Time = [0]
         
     def dynamicsParameters(self):
         """
@@ -631,8 +637,8 @@ class quadcopter(vehicle):
             b1s = beta[1] - 16 * self.omega[0] / (self.gamma * self.blade_speed[i])
 
             # The ordering of this does not yet make sense to me.
-            T[:,i] = self.ct * self.blade_speed[i]**2 * np.array([-np.sin(b1s),
-                                                                  np.cos(b1s)*np.sin(a1s),
+            T[:,i] = self.ct * self.blade_speed[i]**2 * np.array([-np.cos(b1s)*np.sin(a1s),
+                                                                  np.sin(b1s),
                                                                   np.cos(a1s)*np.cos(b1s)])
 
             tau[:,i] = np.cross(T[:,i],self.D[:,i])
@@ -640,8 +646,12 @@ class quadcopter(vehicle):
         # Update the velocities
         domega = self.J_inv@(-np.cross(self.omega,self.J@self.omega)+np.sum(tau+Q,axis=1))
         self.omega += dt * domega
-        dv = (-np.cross(self.v,self.M * self.v) + np.sum(T,axis=1)) / self.M
+        dv = (-np.cross(self.v,self.M * self.v) - self.M * self.g * self.R.T @np.array([0,0,1])+ np.sum(T,axis=1)) / self.M
         self.v += dt * dv
+
+        print(self.v)
+        self.Time.append(self.Time[-1] + dt)
+        self.v_traj.append(self.v)
 
     def draw_body(self):
         V = cubeVertices(*self.bodyDimensions)

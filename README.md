@@ -1,34 +1,26 @@
-# Discover STEM: Programming for Robot Control
+# Minecraft Control 
 
-Oh hey. Here is the code for our tutorial session. 
+This is a simple Minecraft environment with controllable vehicles in it. It is built from the environment from here.
 
-# Running the Code
+https://github.com/fogleman/Minecraft
 
-To get started do the following thing.
+The vehicles don't look like they come from the game, but . . . 
 
-* Open a terminal. 
-* Paste in the following commands (either right click or `Ctrl-Shift-v`)
+# Installation
+
+Paste the following commands into a terminal
 
 ```
 git clone https://github.com/AndyLamperski/minecraftControl.git
 cd minecraftControl
-./buildEnvironment
+pip install .
 ```
 
-* Press `Enter`
-* Click on `tutorial.ipynb`
+# Testing the Code
 
-# If you need to restart
-
-If something weird should happen, you may need to restart the tutorial. 
-
-* Paste the commands into the terminal
+Paste the following command into the terminal
 
 ```
-jupyter notebook
+python testVehicle.py
 ```
 
-* Press `Enter`
-* Click on `tutorial.ipynb`
-
- 

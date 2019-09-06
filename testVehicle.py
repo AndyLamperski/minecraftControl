@@ -1,5 +1,5 @@
-import discoverSTEM.vehicles as vh
-import discoverSTEM.minecraft as mc
+import minecraftControl.vehicles as vh
+import minecraftControl.minecraft as mc
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -9,7 +9,7 @@ vehicle = vh.car((-x,-1,y),controller=None)
 
 plt.figure()
 
-vehicle = vh.quadcopter((0.,0,0),controller=None)
+vehicle = vh.quadcopter((0.,0,1),controller=None)
 
 mc.generalSystem(layout,vehicle)
 # This is special to the quadcopter

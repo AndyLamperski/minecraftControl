@@ -458,7 +458,7 @@ R_dw = np.array([[-1.,0,0],
                  [0,1,0]])
 p_dw = np.array([0.,-1,0])
 
-import discoverSTEM.uquat as uq
+import minecraftControl.uquat as uq
 
 class quadcopter(vehicle):
     def __init__(self,position,SPEED = VEHICLE_SPEED,controller=None):

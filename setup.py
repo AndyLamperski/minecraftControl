@@ -1,12 +1,12 @@
 from setuptools import setup
 
-setup(name='discoverSTEM',
+setup(name='minecraftControl',
       author = 'Andy Lamperski',
-      description = 'Tutorial on coding for robot control',
-      url = 'https://github.com/AndyLamperski/DiscoverSTEM',
+      description = 'Controllable Vehicles in Minecraft Environment',
+      url = 'https://github.com/AndyLamperski/minecraftControl',
       author_email = 'alampers@umn.edu',
       license = 'MIT',
-      packages = ['discoverSTEM'],
+      packages = ['minecraftControl'],
       install_requires = [
           'jupyter',
           'numpy',
